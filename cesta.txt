@@ -1,0 +1,5 @@
+cd /mnt/c/Users/David/Desktop/ISA_projekt
+
+navratove kody:
+0 - vse ok
+1 - spatne parametry
