@@ -1,4 +1,4 @@
-cd /mnt/c/Users/David/Desktop/ISA_projekt
+cd /mnt/c/Users/David/Documents/GitHub/ISA
 
 navratove kody:
 0 - vse ok

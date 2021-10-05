@@ -3,7 +3,8 @@
 #include <iostream>
 #include <cstring>
 
-
+#include <openssl/aes.h>
+#include <openssl/evp.h>
 
 using namespace std;
 
