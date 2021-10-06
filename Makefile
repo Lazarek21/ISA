@@ -1,10 +1,10 @@
 CC = g++
-CFLAGS = -g -Wall -pedantic 
+CFLAGS = -std=c++11 -Wall 
 
 build:
 	clear
 	@echo "Build.."
-	$(CC) $(CFLAGS) main.cpp -o secret
+	$(CC) $(CFLAGS) main.cpp -o secret -lcrypto
 	@echo "Success.."
 	
 check:

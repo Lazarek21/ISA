@@ -1,5 +1,6 @@
 cd /mnt/c/Users/David/Documents/GitHub/ISA
-
 navratove kody:
 0 - vse ok
 1 - spatne parametry
+2 - chyba pri sifrovani
+3 - chyba pri desifrovani
