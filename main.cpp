@@ -3,11 +3,16 @@
 #include <iostream>
 #include <cstring>
 #include <memory>
-#include <limits>
-#include <stdexcept>
 
 #include <openssl/evp.h>
 #include <openssl/conf.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip_icmp.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 using namespace std;
 
@@ -39,7 +44,6 @@ int AES_encrypt(unsigned char* text, int text_len, unsigned char* cipher)
     }
 
     cipher_len += len;
-    cout << cipher_len << "\n";
  
     if(!EVP_EncryptFinal_ex(ctx, cipher + len, &len))
     {
@@ -48,7 +52,6 @@ int AES_encrypt(unsigned char* text, int text_len, unsigned char* cipher)
     }
 
     cipher_len += len;
-    cout << cipher_len << "\n";
 
     EVP_CIPHER_CTX_free(ctx);
     
@@ -94,36 +97,82 @@ int AES_decrypt(unsigned char* cipher, int cipher_len, unsigned char* text)
     return text_len;
 }
 
+char * getIPaddrByHostname(char *addr_host, struct sockaddr_in *addr_con)
+{
+    printf("\nResolving DNS..\n");
+    struct hostent *host_entity;
+    char *ip=(char*)malloc(NI_MAXHOST*sizeof(char));
+    int i;
+  
+    if ((host_entity = gethostbyname(addr_host)) == NULL)
+    {
+        // No ip found for hostname
+        return NULL;
+    }
+      
+    //filling up address structure
+    strcpy(ip, inet_ntoa(*(struct in_addr *)
+                          host_entity->h_addr));
+  
+    addr_con->sin_family = host_entity->h_addrtype;
+    addr_con->sin_port = htons(P);
+    addr_con->sin_addr.s_addr  = *(long*)host_entity->h_addr;
+  
+    return ip;
+      
+}
+
 
 int main(int argc, char const *argv[])
 {
     //overeni poctu argumentu
     if (argc == 2)
     //cast pro poslouchani a ukladani souboru nebo vypsani napovedy
-    {
+    {           //listener mode
         if(strcmp("-l", argv[1]) == 0 || strcmp("-L", argv[1]) == 0)
-        {
+        {       //listening
             cout << "Enter to listen mode..\n";
+
+            //initialization 
+            string line;
+            unsigned char* cipher;
+            cipher = (unsigned char*)malloc(128);  
+            unsigned char* decrypted_line;
+            decrypted_line = (unsigned char*)malloc(128);
+            int cipher_len;  
+
+            memset(cipher, 0, 128);
+            memset(decrypted_line, 0, 128);    
+
+            int dec_len = AES_decrypt(cipher, cipher_len, decrypted_line);
+            
+            for (int i = 0; i < dec_len; i++)
+            {
+                cout << decrypted_line[i]; 
+            }
+            cout << "\n";
+        
+            free(cipher);
+            free(decrypted_line);
+        
         }
         else if (strcmp("-h", argv[1]) == 0 || strcmp("-H", argv[1]) == 0)
-        {
+        {       //help section
             cout << "Help..\n";
         }
         else
-        {
+        {       //err
             cout << "You gave invalid parameters\nTry help -h|-H\n";
             return 1;
         }
     }
     else if (argc == 5)
-    //cast pro sifrovani a posilani souboru
-    {
-        //overeni spravnosti prepinacu
+    {           //sender mode
         if(strcmp("-r", argv[1]) == 0 || strcmp("-s", argv[3]) == 0)
         {
             cout << "Enter to sender mode..\n";
             
-            //kontrola souboru
+            //check file
             fstream file (argv[2]);
             if(!file.is_open())
             {
@@ -131,50 +180,43 @@ int main(int argc, char const *argv[])
                 return 1;
             }
             
+            //check addr
+
+
+            //initialization 
             string line;
             unsigned char* cipher;
             cipher = (unsigned char*)malloc(128);  
             unsigned char* text;
             text = (unsigned char*)malloc(128);
-            unsigned char* decrypted_line;
-            decrypted_line = (unsigned char*)malloc(128);
 
             while (getline(file,line))
             {              
                 memset(cipher, 0, 128);                
                 memset(text, 0, 128);              
-                memset(decrypted_line, 0, 128);
 
                 strcpy((char*)text, line.c_str());
-                printf("vstup = %s\n", text);
-                printf("vstup-|%d, %c|-|%d, %c|-\n", text[0], text[0], text[line.length()-1], text[line.length()-2]);
 
-                int cipher_len = AES_encrypt(text, line.length(), cipher);
-                cout << "zasifrovano = \n";
-                cout << cipher << "\n";
-                for (int i = 0; i < cipher_len; i++)
-                {
-                    printf("%02x", (int)cipher[i]); 
-                }
-                cout << "\n";
-                cout << "delka sifry = " << cipher_len << "\n";
+                int cipher_len = AES_encrypt(text, line.length(), cipher);          
+            }
             
-                int dec_len = AES_decrypt(cipher, cipher_len, decrypted_line);
-                cout << "desifrovano = \n";
-                cout << decrypted_line << "\n";
-                printf("vystup-|%d, %c|-|%d, %c|-\n", decrypted_line[0], decrypted_line[0], decrypted_line[line.length()-1], decrypted_line[line.length()-2]);
-                for (int i = 0; i < dec_len; i++)
-                {
-                    printf("%c|", decrypted_line[i]);
-                }
-                cout << "\n";
-                cout << "delka textu = " << dec_len << "\n\n";
+            int sockfd;
+            char *ip_addr, *reverse_hostname;
+            struct sockaddr_in addr_con;
+            int addrlen = sizeof(addr_con);
+            char net_buf[NI_MAXHOST];
+
+            int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+            if(sock < 0)
+            {
+                cout << "nepodarilo se inicializovat socket\n";
+                pclose(sock);
+                return 4;
             }
 
 
             free(cipher);
             free(text);
-            free(decrypted_line);
             file.close();
         }
         else

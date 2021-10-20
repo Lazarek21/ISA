@@ -4,3 +4,4 @@ navratove kody:
 1 - spatne parametry
 2 - chyba pri sifrovani
 3 - chyba pri desifrovani
+4 - nepodarilo se inicializovat socket

@@ -1,10 +1,11 @@
 CC = g++
 CFLAGS = -std=c++11 -Wall 
-
+LIBS = -lpcap -lcrypto
 build:
 	clear
 	@echo "Build.."
-	$(CC) $(CFLAGS) main.cpp -o secret -lcrypto
+	$(CC) $(CFLAGS) icmp_client.cpp -o secret $(LIBS)
+
 	@echo "Success.."
 	
 check:
